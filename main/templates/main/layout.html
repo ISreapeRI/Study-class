@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static "CSS/layout.css" %}">
+    <script src="{% static "JS/layout.js" %}"></script>
+    {% block headAddition %}{% endblock %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <header>
+        <div class="siteName">
+            <h1>КФ МГТУ им. Баумана</h1>
+            <h3>Учебная группа</h3>
+        </div>
+    </header>
+
+    <div class="mainContent">
+        {% block body %}
+
+        {% endblock %}
+    </div>
+
+    <div class="slide">
+        <h1>МЕНЮ РЕСУРСА</h1>
+        <ul>
+            {% if user.is_authenticated %}
+                {% for group in user.groups.all %}
+                    {% if group.name == 'student' %}
+                        <li><a href="{% url 'main' %}">Главная страница</a></li>
+
+                        <li><a href="{% url 'subjects' %}">Список предметов группы</a></li>
+                    {% elif group.name == 'teacher' %}
+                        <li><a href="{% url 'main' %}">Главная страница</a></li>
+
+                        <li><a href="{% url 'subjects' %}">Список учебных предметов</a></li>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <li><a href="{% url 'main' %}">Главная страница</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="account">
+            <i class="fa-solid fa-user"></i>
+
+            <!-- Проверяем пользователя на вход в аккаунт -->
+            {% if user.is_authenticated %}
+                <p>{{ user.first_name }}</p>
+                <h4 id="logout" onclick="confirmLogOut()">Выйти</h4>
+            {% else %}
+                <a id="login" href="{% url 'login' %}">Войти</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Кнопка для вызова бокового меню -->
+    <input type="checkbox">
+    <div class="menuButton" onclick="moveSide()">
+        <span class = "top_bar common"></span>
+        <span class = "middle_bar common"></span>
+        <span class = "bottom_bar common"></span>
+    </div>
+
+    <script>
+        function confirmLogOut() {
+          let text = "Вы уверены, что хотите выйти из аккаунта?";
+
+          if (confirm(text) === true) {
+            window.location.replace("{% url 'logout' %}?next={% url 'main' %}");
+          }
+        }
+    </script>
+</body>
+</html>

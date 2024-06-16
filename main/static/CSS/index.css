@@ -1,0 +1,22 @@
+.account_form {
+    width: 400px;
+    text-align: center;
+}
+
+.account_form label {
+    position: relative;
+    font-size: 30px;
+}
+
+.account_form input {
+    position: relative;
+    width: 60%;
+    font-size: 30px;
+}
+
+.account_form .account_confirm {
+    width: 60%;
+    margin-top: 20px;
+    height: 5%;
+    cursor: pointer;
+}

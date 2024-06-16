@@ -1,0 +1,23 @@
+{% extends 'main/layout.html' %}
+{% load static %}
+
+{% block title %}
+    Учебные предметы
+{% endblock %}
+
+{% block headAddition %}
+
+{% endblock %}
+
+{% block body %}
+    <ul>
+        {% if user.is_authenticated %}
+            {% for el in subjects %}
+                <li>
+                    {{ el.name }}
+                    <a href="{% url 'subject-detail' el.id %}">Подробнее</a>
+                </li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+{% endblock %}

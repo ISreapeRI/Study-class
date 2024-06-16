@@ -1,0 +1,35 @@
+{% extends 'main/layout.html' %}
+{% load static %}
+
+{% block title %}
+    {{ exercise.name }}
+{% endblock %}
+
+{% block headAddition %}
+
+{% endblock %}
+
+{% block body %}
+    <form action="{% url 'exercise-files-update' subject_id exercise.id %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <ul class="uploads">
+            <li>
+                {{ form.file }}
+            </li>
+        </ul>
+        <button type="button" onclick="addFileUploadButton()"> Добавить файл </button>
+        <p><input type="submit" value="Выложить" /></p>
+    </form>
+
+    <script>
+        function addFileUploadButton() {
+            const li = document.createElement("li");
+            const Input = document.getElementsByName("file")[0];
+
+            li.appendChild(Input.cloneNode(true));
+
+            const element = document.getElementsByClassName("uploads")[0];
+            element.appendChild(li);
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,719 @@
+#include <mega1281.h>  
+#include <stdio.h>  
+#include <stdlib.h> 
+#include <string.h> 
+#define RXB8 1 
+#define TXB8 0 
+#define UPE 2 
+#define OVR 3 
+#define FE 4 
+#define UDRE 5 
+#define RXC 7 
+#define FRAMING_ERROR (1<<FE) 
+#define PARITY_ERROR (1<<UPE) 
+#define DATA_OVERRUN (1<<OVR) 
+#define DATA_REGISTER_EMPTY (1<<UDRE) 
+#define RX_COMPLETE (1<<RXC) 
+//usarts 
+void putchar1(char c);    
+void choice(char f) ;  
+char getchar1(void); 
+char getchar(void); 
+char f,flag;//,*str;  //command and flag 
+// USART0 Receiver buffer 
+        #define RX_BUFFER_SIZE0 8 
+        char rx_buffer0[RX_BUFFER_SIZE0]; 
+        #if RX_BUFFER_SIZE0<256 
+        unsigned char rx_wr_index0,rx_rd_index0,rx_counter0; 
+        #else 
+        unsigned int rx_wr_index0,rx_rd_index0,rx_counter0; 
+        #endif 
+// This flag is set on USART0 Receiver buffer overflow 
+        bit rx_buffer_overflow0; 
+// USART0 Receiver interrupt service routine 
+interrupt [USART0_RXC] void usart0_rx_isr(void) 
+{  
+#asm("cli") 
+UCSR0A =0x00; 
+f=UDR0; 
+choice(f);  
+#asm("sei")   
+} 
+#ifndef _DEBUG_TERMINAL_IO_ 
+// Get a character from the USART0 Receiver buffer 
+#define _ALTERNATE_GETCHAR_ 
+#pragma used+ 
+char getchar(void) 
+{ 
+char data; 
+while (rx_counter0==0); 
+data=rx_buffer0[rx_rd_index0]; 
+if (++rx_rd_index0 == RX_BUFFER_SIZE0) rx_rd_index0=0; 
+#asm("cli") 
+--rx_counter0; 
+#asm("sei") 
+return data; 
+} 
+#pragma used- 
+#endif 
+// USART0 Transmitter buffer 
+#define TX_BUFFER_SIZE0 8 
+char tx_buffer0[TX_BUFFER_SIZE0]; 
+#if TX_BUFFER_SIZE0<256 
+unsigned char tx_wr_index0,tx_rd_index0,tx_counter0; 
+#else 
+unsigned int tx_wr_index0,tx_rd_index0,tx_counter0; 
+#endif 
+// USART0 Transmitter interrupt service routine 
+interrupt [USART0_TXC] void usart0_tx_isr(void) 
+{ 
+if (tx_counter0) 
+   { 
+   --tx_counter0; 
+   UDR0=tx_buffer0[tx_rd_index0]; 
+   if (++tx_rd_index0 == TX_BUFFER_SIZE0) tx_rd_index0=0; 
+   }; 
+} 
+#ifndef _DEBUG_TERMINAL_IO_ 
+// Write a character to the USART0 Transmitter buffer 
+#define _ALTERNATE_PUTCHAR_ 
+#pragma used+ 
+void putchar(char c) 
+{ 
+while (tx_counter0 == TX_BUFFER_SIZE0); 
+#asm("cli") 
+if (tx_counter0 || ((UCSR0A & DATA_REGISTER_EMPTY)==0)) 
+   { 
+   tx_buffer0[tx_wr_index0]=c; 
+   if (++tx_wr_index0 == TX_BUFFER_SIZE0) tx_wr_index0=0; 
+   ++tx_counter0; 
+   } 
+else 
+   UDR0=c; 
+#asm("sei") 
+} 
+#pragma used- 
+#endif 
+// USART1 Receiver buffer 
+#define RX_BUFFER_SIZE1 8 
+char rx_buffer1[RX_BUFFER_SIZE1]; 
+#if RX_BUFFER_SIZE1<256 
+unsigned char rx_wr_index1,rx_rd_index1,rx_counter1; 
+#else 
+unsigned int rx_wr_index1,rx_rd_index1,rx_counter1; 
+#endif 
+// This flag is set on USART1 Receiver buffer overflow 
+bit rx_buffer_overflow1; 
+// USART1 Receiver interrupt service routine 
+interrupt [USART1_RXC] void usart1_rx_isr(void) 
+{   
+#asm("cli") 
+UCSR1A =0x00; 
+f=UDR1; 
+choice(f);  
+#asm("sei") 
+} 
+// Get a character from the USART1 Receiver buffer 
+#pragma used+ 
+char getchar1(void) 
+{ 
+char data; 
+while (rx_counter1==0); 
+data=rx_buffer1[rx_rd_index1]; 
+if (++rx_rd_index1 == RX_BUFFER_SIZE1) rx_rd_index1=0; 
+#asm("cli") 
+--rx_counter1; 
+#asm("sei") 
+return data; 
+} 
+#pragma used- 
+// USART1 Transmitter buffer 
+#define TX_BUFFER_SIZE1 8 
+char tx_buffer1[TX_BUFFER_SIZE1]; 
+#if TX_BUFFER_SIZE1<256 
+unsigned char tx_wr_index1,tx_rd_index1,tx_counter1; 
+#else 
+unsigned int tx_wr_index1,tx_rd_index1,tx_counter1; 
+#endif 
+// USART1 Transmitter interrupt service routine 
+interrupt [USART1_TXC] void usart1_tx_isr(void) 
+{     
+if (tx_counter1) 
+   { 
+   --tx_counter1; 
+   UDR1=tx_buffer1[tx_rd_index1]; 
+   if (++tx_rd_index1 == TX_BUFFER_SIZE1) tx_rd_index1=0; 
+   }; 
+} 
+// Write a character to the USART1 Transmitter buffer 
+#pragma used+ 
+void putchar1(char c) 
+{ 
+while (tx_counter1 == TX_BUFFER_SIZE1); 
+#asm("cli") 
+if (tx_counter1 || ((UCSR1A & DATA_REGISTER_EMPTY)==0)) 
+   { 
+   tx_buffer1[tx_wr_index1]=c; 
+   if (++tx_wr_index1 == TX_BUFFER_SIZE1) tx_wr_index1=0; 
+   ++tx_counter1; 
+   } 
+else 
+   UDR1=c; 
+#asm("sei") 
+} 
+#pragma used- 
+// Declare your global variables here  
+char f0,f1, fc0, fc1;//,*str;  //command and flag 
+int count1,count3,i; // impulse counters  
+int count10,count30;  
+int PWML,PWMR; //PWM main parameters 
+int C_PWML, C_PWMR, C_PWM=50; //PWM add parameters 
+//Timer 5 interrupt  //Left wheel's PWM change to stabilize 
+// Timer 5 output compare A interrupt service routine 
+interrupt [TIM5_COMPA] void timer5_compa_isr(void) 
+{ 
+ #asm("sei") 
+count1 = TCNT1L;//low part of left wheel impulse 
+count3 = TCNT3L; //low part of right wheel impulse 
+count10 = TCNT1H;//high part of left wheel impulse 
+count30 = TCNT3H;   
+TCNT3H=0x00;TCNT1H=0x00; //clear low impulse counters   
+TCNT3L=0x00;TCNT1L=0x00; //clear low impulse counters 
+//stabilize when move forvard 
+if ( flag == 'w') {    
+if ( (count30-count10) >=1){  //right is more faster 
+    PWML=PWML+2; 
+   } 
+   else if ( (count10-count30) >=1) { 
+    PWML=PWML-2; 
+   } 
+   else if ( (count3-count1) >= 1 ){ //right is faster 
+    PWML=PWML+1;//++; // rise left PWM 
+    }     
+   else if ( (count1-count3) >= 1 ) { //left is faster 
+    PWML=PWML-1;//--; // low left PWM 
+    }   
+OCR0A=PWML; // left PWM  
+} 
+} //end of Timer 5 interrupt 
+// 
+//input string from integer 
+void putnumber( int count) 
+{    
+    char *str;  
+    itoa(count,str);         
+    for (i=0;i<=strlen(str);i++) 
+    { 
+        putchar1(str[i]);        
+    }   
+} 
+// 
+// turn left or right 
+void rotate(char c) 
+{        
+        int c0,c1,c2,c3,counter_l,counter_h;  
+        int angle_H=0x0A, angle_L=0xBE;   // 0x157C = 5500 impulses = 1 full wheel rotation   //0x0ABE = 2750 = 1/2 full wheel rotation 
+        //stop mashine 
+        PORTC.0 = 0; 
+        PORTC.1 = 0; 
+        PORTC.2 = 0; 
+        PORTC.3 = 0;   
+        OCR0A=0x93;  //normal speed 
+        OCR2A=0x93; 
+        flag='f';  
+        TCNT3H=0x00;TCNT1H=0x00; //clear impulse counters high 
+        TCNT3L=0x00;TCNT1L=0x00; //clear impulse counters low 
+        if (c=='r')   //turn right        left pwm work 
+        {   
+                c0=1;  
+                c1=0; 
+                c2=0; 
+                c3=0; 
+        }  
+        else //(c=='l') turn left    right pwm work 
+        {   
+                c0=0;   
+                c1=0; 
+                c2=0; 
+                c3=1; 
+        } 
+        counter_h=0; 
+        counter_l=0; 
+        while ((counter_h<(angle_H))||(counter_l<angle_L)) 
+        { 
+                if (c=='r')   //turn right  
+                {  
+                        counter_l=TCNT1L;   //counters for left wheel 
+                        counter_h=TCNT1H; 
+                } 
+                else //(c=='l') turn left     
+                {  
+                        counter_l=TCNT3L;   //counters for right wheel 
+                        counter_h=TCNT3H; 
+                }   
+                PORTC.0 = c0; 
+                PORTC.1 = c1; 
+                PORTC.2 = c2; 
+                PORTC.3 = c3;   
+                if  ((counter_h>(angle_H))&&(counter_l>angle_L))   
+                { 
+                break; 
+                } 
+        } 
+        //stop mashine 
+        PORTC.0 = 0; 
+        PORTC.1 = 0; 
+        PORTC.2 = 0; 
+        PORTC.3 = 0; 
+        flag='f'; 
+        //antiterror 
+        if (c=='r')   //turn right   left pwm work 
+        {   
+                c0=0;  
+                c1=0; 
+                c2=1; 
+                c3=0; 
+                angle_L=TCNT3L; 
+                angle_H=TCNT3H; 
+        }  
+        else //(c=='l') turn left    right pwm work 
+        {   
+                c0=0;   
+                c1=1; 
+                c2=0; 
+                c3=0; 
+                angle_L=TCNT1L; 
+                angle_H=TCNT1H; 
+        } 
+        TCNT3H=0x00;TCNT1H=0x00; //clear impulse counters high 
+        TCNT3L=0x00;TCNT1L=0x00; //clear impulse counters low 
+        counter_h=0; 
+        counter_l=0; 
+        while ((counter_h<(angle_H))||(counter_l<angle_L)) 
+        { 
+                if (c=='l')   //toturn right  
+                {  
+                        counter_l=TCNT1L;   //counters for left wheel 
+                        counter_h=TCNT1H; 
+                } 
+                else //(c=='r') toturn left     
+                {  
+                        counter_l=TCNT3L;   //counters for right wheel 
+                        counter_h=TCNT3H; 
+                }     
+                PORTC.0 = c0; 
+                PORTC.1 = c1; 
+                PORTC.2 = c2; 
+                PORTC.3 = c3;   
+                if  ((counter_h>(angle_H))&&(counter_l>angle_L))   
+                { 
+                break; 
+                } 
+        } 
+        //stop mashine 
+        PORTC.0 = 0; 
+        PORTC.1 = 0; 
+       
+        PORTC.2 = 0; 
+        PORTC.3 = 0; 
+        flag='f';   
+        OCR0A=PWML;  //normal speed 
+        OCR2A=PWMR;     
+}  
+// case 
+void choice(char a)  
+{   
+putchar1(a);         
+   switch (a) {  
+        case 'w' :  // Move forward! 
+          //Start Timer5 
+          TCCR5B=0x0D;  //Timer5 parameters  
+          OCR5AH=0x05;   
+          OCR5AL=0x9F;   
+          TIMSK5=0x02;  //Timer5 interrupt  
+          PORTC.0 = 1; 
+          PORTC.1 = 0; 
+          PORTC.2 = 0; 
+          PORTC.3 = 1;  
+          C_PWML=0; 
+          C_PWMR=0;  
+          flag='w'; 
+          break; 
+        case 's' :  // Move back! 
+          //Start Timer5 
+          TCCR5B=0x0D;  //Timer5 parameters  
+          OCR5AH=0x05;   
+          OCR5AL=0x9F;   
+          TIMSK5=0x02;  //Timer5 interrupt  
+          PORTC.0 = 0; 
+          PORTC.1 = 1; 
+          PORTC.2 = 1; 
+          PORTC.3 = 0;         
+          C_PWML=0; 
+          C_PWMR=0;  
+          flag='w';    //try 
+          break; 
+        case 'd' :  // Move left! 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt   
+          PORTC.0 = 1; 
+          PORTC.1 = 0; 
+          PORTC.2 = 1; 
+          PORTC.3 = 0;       
+          C_PWML=0; 
+          C_PWMR=0;    
+          flag='d';  
+          break; 
+        case 'a' :  // Move right! 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt   
+          PORTC.0 = 0; 
+          PORTC.1 = 1; 
+          PORTC.2 = 0; 
+          PORTC.3 = 1;       
+          C_PWML=0; 
+          C_PWMR=0;    
+          flag='a'; 
+          break; 
+        case 'f' :  // Move stop! 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt   
+          PORTC.0 = 0; 
+          PORTC.1 = 0; 
+          PORTC.2 = 0; 
+          PORTC.3 = 0;         
+          C_PWML=0; 
+          C_PWMR=0;    
+          flag='f';  
+          break; 
+        case 'z' :  // Move fast! 
+          PWML++;  
+          PWMR++; 
+          break; 
+        case 'x' :  // Move slow!  
+          PWML--;   
+          PWMR--;  
+          break; 
+        case 'u' :  // Move forward-left  
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt 
+          C_PWML=0; 
+          C_PWMR=C_PWM;  
+          PORTC.0 = 1; 
+          PORTC.1 = 0; 
+          PORTC.2 = 0; 
+          PORTC.3 = 1;   
+          flag='f';  
+          break;  
+        case 'i' :  // Move forward-right  
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt    
+          C_PWML=C_PWM; 
+          C_PWMR=0;  
+          PORTC.0 = 1; 
+          PORTC.1 = 0; 
+          PORTC.2 = 0; 
+          PORTC.3 = 1;    
+          flag='f'; 
+          break;   
+        case 'o' :  // Move back-left 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt  
+          C_PWML=0; 
+          C_PWMR=C_PWM;  
+          PORTC.0 = 0; 
+          PORTC.1 = 1; 
+          PORTC.2 = 1; 
+          PORTC.3 = 0;    
+          flag='f'; 
+          break;  
+        case 'p' :  // Move back-right  
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt  
+          C_PWML=C_PWM; 
+          C_PWMR=0;  
+          PORTC.0 = 0; 
+          PORTC.1 = 1; 
+          PORTC.2 = 1; 
+          PORTC.3 = 0;    
+          flag='f'; 
+          break;         
+        case 'l' :  // Turn left, 45 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt  
+          rotate('l');  
+          C_PWML=0; 
+          C_PWMR=0;  
+          flag='f'; 
+          break; 
+        case 'r' :  // Turn right, 45 
+          //Stop Timer5 
+          TCCR5B=0x00;  //Timer5 parameters  
+          OCR5AH=0x00;   
+          OCR5AL=0x00;   
+          TIMSK5=0x00;  //Timer5 interrupt  
+          rotate('r'); 
+          C_PWML=0; 
+          C_PWMR=0;  
+          flag='f'; 
+          break;   
+        default: 
+          break; 
+      } //and of switch 
+      OCR0A=PWML+C_PWML;   // left PWM 
+      OCR2A=PWMR+C_PWMR;   // right PWM 
+} 
+// 
+ 
+//Main part 
+void main(void) 
+{ 
+// Crystal Oscillator division factor: 1 
+#pragma optsize- 
+CLKPR=0x80; 
+CLKPR=0x00; 
+#ifdef _OPTIMIZE_SIZE_ 
+#pragma optsize+ 
+#endif 
+// Input/Output Ports initialization 
+// Port A initialization 
+PORTA=0x00; 
+DDRA=0x00; 
+// Port B initialization 
+//  Func7=Out  Func6=In  Func5=In  Func4=Out  Func3=In  Func2=In  Func1=In Func0=In  
+//  State7=0  State6=T  State5=T  State4=0  State3=T  State2=T  State1=T State0=T  
+PORTB=0x00; 
+DDRB=0x90; 
+// Port C initialization 
+//  Func7=In  Func6=In  Func5=In  Func4=In  Func3=Out  Func2=Out  Func1=Out Func0=Out  
+//  State7=T  State6=T  State5=T  State4=T  State3=0  State2=0  State1=0 State0=0  
+PORTC=0x00; 
+DDRC=0x0F; 
+// Port D initialization 
+//  Func7=In  Func6=In  Func5=Out  Func4=In  Func3=In  Func2=In  Func1=In Func0=In  
+//  State7=T  State6=T  State5=0  State4=T  State3=T  State2=T  State1=T State0=T  
+PORTD=0x00; 
+DDRD=0x20; 
+// Port E initialization 
+//  Func7=In  Func6=In  Func5=In  Func4=In  Func3=In  Func2=In  Func1=Out Func0=In  
+//  State7=T  State6=T  State5=T  State4=T  State3=T  State2=T  State1=0 State0=T  
+PORTE=0x00; 
+DDRE=0x02; 
+// Port F initialization 
+PORTF=0x00; 
+DDRF=0x00; 
+// Port G initialization 
+// Func5=In Func4=In Func3=In Func2=In Func1=In Func0=In  
+// State5=T State4=T State3=T State2=T State1=T State0=T  
+PORTG=0x00; 
+DDRG=0x00; 
+// Timer 0 
+// Left wheel's PWM 
+// Timer/Counter 0 initialization 
+// Clock source: System Clock 
+// Clock value: 230,313 kHz 
+// Mode: Fast PWM top=FFh 
+// OC0A output: Non-Inverted PWM 
+// OC0B output: Disconnected 
+TCCR0A=0x83; // 1000 0011 
+TCCR0B=0x03; 
+TCNT0=0x00; 
+OCR0A=0x4F; 
+OCR0B=0x00; 
+// Timer 2 
+// Right wheel's PWM 
+// Timer/Counter 2 initialization 
+// Clock source: System Clock 
+// Clock value: 230,313 kHz 
+// Mode: Fast PWM top=FFh 
+// OC2A output: Non-Inverted PWM 
+// OC2B output: Disconnected 
+ASSR=0x00; 
+TCCR2A=0x83; 
+TCCR2B=0x03; 
+TCNT2=0x00; 
+OCR2A=0x4F; 
+OCR2B=0x00; 
+// Timer 1 
+// Left wheel's impulse counter 
+// Timer/Counter 1 initialization 
+// Clock source: T1 pin Falling Edge 
+// Mode: Normal top=FFFFh 
+// Noise Canceler: Off 
+// Input Capture on Falling Edge 
+// OC3A output: Discon. 
+// OC3B output: Discon. 
+// OC3C output: Discon. 
+// Timer 1 Overflow Interrupt: Off 
+// Input Capture Interrupt: Off 
+// Compare A Match Interrupt: Off 
+// Compare B Match Interrupt: Off 
+// Compare C Match Interrupt: Off 
+TCCR1A=0x00; 
+TCCR1B=0x06; 
+TCNT1H=0x00; 
+TCNT1L=0x00; 
+ICR1H=0x00; 
+ICR1L=0x00; 
+OCR1AH=0x00; 
+OCR1AL=0x00; 
+OCR1BH=0x00; 
+OCR1BL=0x00; 
+OCR1CH=0x00; 
+OCR1CL=0x00; 
+// Timer 3 
+// Right wheel's impulse counter 
+// Timer/Counter 3 initialization 
+// Clock source: T3 pin Falling Edge 
+// Mode: Normal top=FFFFh 
+// Noise Canceler: Off 
+// Input Capture on Falling Edge 
+// OC3A output: Discon. 
+// OC3B output: Discon. 
+// OC3C output: Discon. 
+// Timer 3 Overflow Interrupt: Off 
+// Input Capture Interrupt: Off 
+// Compare A Match Interrupt: Off 
+// Compare B Match Interrupt: Off 
+// Compare C Match Interrupt: Off 
+TCCR3A=0x00; 
+TCCR3B=0x06; 
+TCNT3H=0x00; 
+TCNT3L=0x00; 
+ICR3H=0x00; 
+ICR3L=0x00; 
+OCR3AH=0x00; 
+OCR3AL=0x00; 
+OCR3BH=0x00; 
+OCR3BL=0x00; 
+OCR3CH=0x00; 
+OCR3CL=0x00; 
+// Timer 5 
+// Time counter for Timer 1 and 3 
+// Timer/Counter 5 initialization 
+// Clock source: System Clock 
+// Clock value: 14,395 kHz 
+// Mode: CTC top=OCR5A 
+// OC5A output: Discon. 
+// OC5B output: Discon. 
+// OC5C output: Discon. 
+// Noise Canceler: Off 
+// Input Capture on Falling Edge 
+// Timer 5 Overflow Interrupt: Off 
+// Input Capture Interrupt: Off 
+// Compare A Match Interrupt: On 
+// Compare B Match Interrupt: Off 
+// Compare C Match Interrupt: Off 
+TCCR5A=0x00; 
+TCCR5B=0x0D; 
+TCNT5H=0x00; 
+TCNT5L=0x00; 
+ICR5H=0x00; 
+ICR5L=0x00; 
+OCR5AH=0x05;  //59F - 1439 Hz  -> time=0.1c - time for interrupt 
+OCR5AL=0x9F; 
+OCR5BH=0x00; 
+OCR5BL=0x00; 
+OCR5CH=0x00; 
+OCR5CL=0x00; 
+// Timer 4 
+// no used 
+TCCR4A=0x00; 
+TCCR4B=0x00; 
+TCNT4H=0x00; 
+TCNT4L=0x00; 
+ICR4H=0x00; 
+ICR4L=0x00; 
+OCR4AH=0x00; 
+OCR4AL=0x00; 
+OCR4BH=0x00; 
+OCR4BL=0x00; 
+OCR4CH=0x00; 
+OCR4CL=0x00; 
+// External Interrupt(s) initialization 
+EICRA=0x00; 
+EICRB=0x00; 
+EIMSK=0x00; 
+PCMSK0=0x00; 
+PCMSK1=0x00; 
+PCMSK2=0x00; 
+PCICR=0x00; 
+// Timer/Counter 0 Interrupt(s) initialization 
+TIMSK0=0x00; 
+// Timer/Counter 1 Interrupt(s) initialization 
+TIMSK1=0x00; 
+// Timer/Counter 2 Interrupt(s) initialization 
+TIMSK2=0x00; 
+// Timer/Counter 3 Interrupt(s) initialization 
+TIMSK3=0x00; 
+// Timer/Counter 4 Interrupt(s) initialization 
+TIMSK4=0x00; 
+// Timer/Counter 5 Interrupt(s) initialization 
+TIMSK5=0x02; 
+// USART0 initialization 
+// Communication Parameters: 8 Data, 1 Stop, No Parity 
+// USART0 Receiver: On 
+// USART0 Transmitter: On 
+// USART0 Mode: Asynchronous 
+// USART0 Baud Rate: 115200 
+UCSR0A=0x00; 
+UCSR0B=0x98; //18 - D8 (R,T) - 98 (R)  1001 1000 
+UCSR0C=0x06; 
+UBRR0H=0x00; 
+UBRR0L=0x07; 
+// USART1 initialization 
+// Communication Parameters: 8 Data, 1 Stop, No Parity 
+// USART1 Receiver: On 
+// USART1 Transmitter: On 
+// USART1 Mode: Asynchronous 
+// USART1 Baud Rate: 9600 
+UCSR1A=0x00; 
+UCSR1B=0x98;  // 1001 1000 
+UCSR1C=0x06;  // 0000 0110 
+UBRR1H=0x00; 
+UBRR1L=0x5F;    // 0F - 57600 //5F - 9600 
+// Analog Comparator initialization 
+// Analog Comparator: Off 
+// Analog Comparator Input Capture by Timer/Counter 1: Off 
+ACSR=0x80; 
+ADCSRB=0x00; 
+#asm("sei") 
+count1=0; 
+count3=0; 
+PWML=OCR0A; 
+PWMR=OCR2A; 
+C_PWML=0; 
+C_PWMR=0; 
+//PWML,PWMR - PWM main parameters 
+//C_PWML, C_PWMR - PWM add parameters 
+PORTB.7 = 1;//left wheel start 
+PORTB.4 = 1;//right wheel start   
+choice('f');//stop 
+while (1) 
+      {   
+      } //end of main while 
+} //end of main main

@@ -1,0 +1,62 @@
+{% extends 'main/layout.html' %}
+{% load static %}
+{% load index %}
+
+{% block title %}
+    {{ exercise.name }}
+{% endblock %}
+
+{% block headAddition %}
+
+{% endblock %}
+
+{% block body %}
+    <div class="exercise">
+        {% if user.is_authenticated %}
+            {% for group in user.groups.all %}
+                <a href="{% url 'subject-detail' subject_id %}">Назад</a>
+                <h1>{{ exercise.name }}</h1>
+
+                {% if exercise.complete %}
+                    <h3>Оценка: {{ exercise.grade }}/{{ exercise.max_grade }}</h3>
+                {% else %}
+                    <h3>Оценка: не выполнено</h3>
+                {% endif %}
+
+                {% if upload|length == 0 %}
+                    <h3>Список файлов пуст</h3>
+
+                    {% if group.name == 'student' %}
+                        <a href="{% url 'exercise-files-update' subject_id exercise.id %}">Выложить файлы</a>
+                    {% elif group.name == 'teacher' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="number" name="grade" style="width: 150px; height: 30px">
+                            <button type="submit" style="width: 150px; height: 30px">Оценить</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <ul>
+                        {% for el in uploadRange %}
+                            <li>
+                                <a href="{% url 'download-file' user.username upload|index:el %}">
+                                    {{ upload|index:el }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if group.name == 'student' %}
+                        <a href="#">Обновить файлы</a>
+                    {% elif group.name == 'teacher' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="number" name="grade" style="width: 150px; height: 30px">
+                            <button type="submit" style="width: 150px; height: 30px">Оценить</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}

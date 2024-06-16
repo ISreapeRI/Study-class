@@ -1,0 +1,65 @@
+{% extends 'main/layout.html' %}
+{% load static %}
+{% load dictionary %}
+{% load times %}
+{% load index %}
+
+{% block title %}
+    {{ subject.name }}
+{% endblock %}
+
+{% block headAddition %}
+<style>
+table {
+    width: 100%;
+}
+
+td, th {
+    padding: 5px;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+    <div class="subject">
+        {% if user.is_authenticated %}
+            {% for group in user.groups.all %}
+                {% if group.name == 'student' %}
+                    <h1>{{ subject.name }}</h1>
+
+                    <h3>Список заданий</h3>
+                    {% for ex in subject.exercise.all %}
+                        {% if ex.student == user %}
+                            <a href="{% url 'exercise-detail' subject.id ex.id %}">{{ ex.name }}</a><br>
+                        {% endif %}
+                    {% endfor %}
+
+                {% elif group.name == 'teacher' %}
+                    <table>
+                        <tr>
+                            {% for stud in students %}
+                                    <th>{{ stud.first_name }}</th>
+                            {% endfor %}
+                        </tr>
+
+                        {% for i in exerciseCount|times %}
+                            <tr>
+                                {% for stud in students %}
+                                    {% with ex=dict|getDictItemFromKey:stud|index:i %}
+                                        {% if ex != '' %}
+                                            <td>
+                                                <a href="{% url 'exercise-detail' subject.id ex.id %}">
+                                                    {{ ex.name }}
+                                                </a>
+                                            </td>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}
